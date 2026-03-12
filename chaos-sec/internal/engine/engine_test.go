@@ -189,3 +189,69 @@ func falcoAlertRequest(t *testing.T, ruleName string) *http.Request {
 	}
 	return req
 }
+
+func TestEngine_NilSIEMSkipsMTTD(t *testing.T) {
+	spec := experiment.ExperimentSpec{
+		Name:            "nil-siem-exp",
+		ExpectedOutcome: "blocked",
+		FalcoRule:       "some_rule",
+		Namespace:       "test",
+	}
+	eng := New(&fakePodRunner{}, nil) // nil SIEM — must not panic
+	results := eng.Run(context.Background(), []experiment.ExperimentSpec{spec})
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if results[0].MTTD != nil {
+		t.Error("expected nil MTTD when SIEM store is nil")
+	}
+}
+
+func TestEngine_ContinuesAfterError(t *testing.T) {
+	specs := []experiment.ExperimentSpec{
+		{Name: "error-first", Namespace: "test", ExpectedOutcome: "blocked"},
+		{Name: "ok-second", Namespace: "test", ExpectedOutcome: "blocked"},
+	}
+	// First call errors, second call succeeds.
+	callCount := 0
+	runner := &callCountRunner{
+		onCall: func(spec experiment.ExperimentSpec) (experiment.ExperimentResult, error) {
+			callCount++
+			if callCount == 1 {
+				return experiment.ExperimentResult{}, context.DeadlineExceeded
+			}
+			return experiment.ExperimentResult{
+				Spec: spec, Pass: true, ActualOutcome: "blocked",
+				StartTime: time.Now(), EndTime: time.Now(),
+			}, nil
+		},
+	}
+	eng := New(runner, nil)
+	results := eng.Run(context.Background(), specs)
+	if len(results) != 2 {
+		t.Fatalf("expected 2 results (engine should continue after error), got %d", len(results))
+	}
+	if results[0].ActualOutcome != "error" {
+		t.Errorf("expected first result to be error, got %q", results[0].ActualOutcome)
+	}
+	if !results[1].Pass {
+		t.Error("expected second result to pass")
+	}
+}
+
+func TestEngine_EmptySpecs(t *testing.T) {
+	eng := New(&fakePodRunner{}, nil)
+	results := eng.Run(context.Background(), nil)
+	if len(results) != 0 {
+		t.Errorf("expected 0 results for empty specs, got %d", len(results))
+	}
+}
+
+// callCountRunner lets tests control Run behaviour per-call.
+type callCountRunner struct {
+	onCall func(spec experiment.ExperimentSpec) (experiment.ExperimentResult, error)
+}
+
+func (r *callCountRunner) Run(_ context.Context, spec experiment.ExperimentSpec) (experiment.ExperimentResult, error) {
+	return r.onCall(spec)
+}

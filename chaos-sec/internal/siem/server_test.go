@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -149,5 +150,35 @@ func TestHandler_RejectsGetMethod(t *testing.T) {
 
 	if resp.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("expected 405, got %d", resp.StatusCode)
+	}
+}
+
+func TestListenAndServe_StartsServer(t *testing.T) {
+	store := NewAlertStore()
+
+	// Find a free port by binding then immediately releasing it.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("could not find free port: %v", err)
+	}
+	addr := ln.Addr().String()
+	_ = ln.Close() // Release the port; ListenAndServe will reclaim it.
+
+	if startErr := ListenAndServe(addr, store); startErr != nil {
+		t.Fatalf("ListenAndServe returned error: %v", startErr)
+	}
+
+	// Give the goroutine a moment to bind.
+	time.Sleep(50 * time.Millisecond)
+
+	alert := FalcoAlert{Rule: "siem_test_rule", Priority: "WARNING", Output: "test"}
+	body, _ := json.Marshal(alert)
+	resp, err := http.Post("http://"+addr+"/falco", "application/json", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("POST to SIEM server failed: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
 	}
 }

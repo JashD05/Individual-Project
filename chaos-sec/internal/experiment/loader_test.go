@@ -123,6 +123,109 @@ host_path_mount: /etc
 	}
 }
 
+func TestLoadAll_MultipleFiles(t *testing.T) {
+	dir := t.TempDir()
+
+	writeYAML(t, dir, "a.yaml", `
+name: exp-a
+image: busybox:1.36
+command: ["echo"]
+expected_outcome: blocked
+namespace: test-ns
+`)
+	writeYAML(t, dir, "b.yaml", `
+name: exp-b
+image: busybox:1.36
+command: ["echo"]
+expected_outcome: permitted
+namespace: test-ns
+`)
+
+	specs, err := LoadAll(dir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(specs) != 2 {
+		t.Fatalf("expected 2 specs, got %d", len(specs))
+	}
+}
+
+func TestLoadAll_InvalidYAMLSyntax(t *testing.T) {
+	dir := t.TempDir()
+	writeYAML(t, dir, "broken.yaml", "name: [\ninvalid yaml")
+
+	_, err := LoadAll(dir)
+	if err == nil {
+		t.Fatal("expected error for invalid YAML syntax, got nil")
+	}
+}
+
+func TestLoadAll_NonexistentDir(t *testing.T) {
+	_, err := LoadAll("/nonexistent/path/that/does/not/exist")
+	if err == nil {
+		t.Fatal("expected error for nonexistent directory, got nil")
+	}
+}
+
+func TestValidate_MissingName(t *testing.T) {
+	err := validate(ExperimentSpec{
+		Image: "busybox", Command: []string{"echo"},
+		ExpectedOutcome: "blocked", Namespace: "ns",
+	})
+	if err == nil {
+		t.Fatal("expected error for missing name")
+	}
+}
+
+func TestValidate_MissingImage(t *testing.T) {
+	err := validate(ExperimentSpec{
+		Name: "exp", Command: []string{"echo"},
+		ExpectedOutcome: "blocked", Namespace: "ns",
+	})
+	if err == nil {
+		t.Fatal("expected error for missing image")
+	}
+}
+
+func TestValidate_EmptyCommand(t *testing.T) {
+	err := validate(ExperimentSpec{
+		Name: "exp", Image: "busybox", Command: []string{},
+		ExpectedOutcome: "blocked", Namespace: "ns",
+	})
+	if err == nil {
+		t.Fatal("expected error for empty command")
+	}
+}
+
+func TestValidate_MissingExpectedOutcome(t *testing.T) {
+	err := validate(ExperimentSpec{
+		Name: "exp", Image: "busybox", Command: []string{"echo"}, Namespace: "ns",
+	})
+	if err == nil {
+		t.Fatal("expected error for missing expected_outcome")
+	}
+}
+
+func TestValidate_MissingNamespace(t *testing.T) {
+	err := validate(ExperimentSpec{
+		Name: "exp", Image: "busybox", Command: []string{"echo"},
+		ExpectedOutcome: "blocked",
+	})
+	if err == nil {
+		t.Fatal("expected error for missing namespace")
+	}
+}
+
+func TestValidate_PermittedOutcome(t *testing.T) {
+	err := validate(ExperimentSpec{
+		Name: "exp", Image: "busybox", Command: []string{"echo"},
+		ExpectedOutcome: "permitted", Namespace: "ns",
+	})
+	if err != nil {
+		t.Fatalf("expected no error for 'permitted' outcome, got %v", err)
+	}
+}
+
 // writeYAML is a test helper that writes content to filename inside dir.
 func writeYAML(t *testing.T, dir, filename, content string) {
 	t.Helper()

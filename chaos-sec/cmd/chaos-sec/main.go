@@ -84,7 +84,7 @@ func main() {
 
 // k8sPodRunner implements engine.PodRunner using the real Kubernetes API.
 type k8sPodRunner struct {
-	cs        *kubernetes.Clientset
+	cs        kubernetes.Interface
 	namespace string
 }
 

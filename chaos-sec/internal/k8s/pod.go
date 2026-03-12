@@ -65,7 +65,7 @@ func BuildAttackerPod(spec experiment.ExperimentSpec, podName string) *corev1.Po
 // as a PASS — the control is working correctly.
 func RunPod(
 	ctx context.Context,
-	cs *kubernetes.Clientset,
+	cs kubernetes.Interface,
 	spec experiment.ExperimentSpec,
 	podName string,
 ) (actualOutcome string, pass bool, exitCode int, logs string, err error) {
@@ -120,7 +120,7 @@ func RunPod(
 // WaitForPodCompletion polls the pod status until it reaches Succeeded or Failed,
 // or the context deadline is exceeded. It uses a 3-second poll interval to avoid
 // hammering the Kubernetes API server.
-func WaitForPodCompletion(ctx context.Context, cs *kubernetes.Clientset, namespace, name string) (*corev1.Pod, error) {
+func WaitForPodCompletion(ctx context.Context, cs kubernetes.Interface, namespace, name string) (*corev1.Pod, error) {
 	var completedPod *corev1.Pod
 
 	err := wait.PollUntilContextTimeout(ctx, 3*time.Second, 2*time.Minute, true,
@@ -181,7 +181,7 @@ func isAdmissionError(err error) bool {
 }
 
 // getPodLogs fetches stdout/stderr from the first container of the named pod.
-func getPodLogs(ctx context.Context, cs *kubernetes.Clientset, namespace, name string) (string, error) {
+func getPodLogs(ctx context.Context, cs kubernetes.Interface, namespace, name string) (string, error) {
 	req := cs.CoreV1().Pods(namespace).GetLogs(name, &corev1.PodLogOptions{Container: "attacker"})
 	raw, err := req.DoRaw(ctx)
 	if err != nil {
