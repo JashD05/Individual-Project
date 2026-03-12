@@ -2,6 +2,15 @@
 
 A security chaos engineering orchestration tool for Kubernetes. Chaos-Sec automates the validation of security controls (NetworkPolicy, Pod Security Admission, runtime detection) by spawning controlled "attacker" pods and comparing observed behaviour against expected outcomes.
 
+## Documentation
+
+| Document | Description |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | System design, component breakdown, data flow |
+| [docs/setup-guide.md](docs/setup-guide.md) | Full setup instructions, Makefile targets, troubleshooting |
+| [docs/experiments.md](docs/experiments.md) | Experiment YAML schema, built-in experiments, adding new ones |
+| [docs/report-format.md](docs/report-format.md) | JSON report schema with field descriptions and examples |
+
 ---
 
 ## Prerequisites

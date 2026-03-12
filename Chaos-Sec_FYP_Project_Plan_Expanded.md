@@ -3,8 +3,8 @@
 **Author:** Jash Dashandi
 **Goal:** Complete the orchestration platform, execute security experiments, integrate feedback loops, and evaluate the system against the defined Research Questions.
 **Deadline:** 06 May 2026
-**Plan Version:** 2.1 — Finalised (compressed timeline)
-**Last Updated:** 09 March 2026
+**Plan Version:** 2.2 — Phases 1 & 2 Complete
+**Last Updated:** 12 March 2026
 
 ---
 
@@ -13,13 +13,13 @@
 > [!IMPORTANT]
 > All dates assume a **Week 1 start of 10 March 2026**. Deadline is **06 May 2026**. The plan targets completion by **04 May** to leave a 2-day buffer.
 
-| Phase | Weeks | Calendar Dates | Focus |
-|---|---|---|---|
-| 1 – Core Experiment Implementation | 1–2 | 10 Mar – 23 Mar | Go codebase, YAML payloads, K8s logic |
-| 2 – Feedback Loop & Mock SIEM | 3–4 | 24 Mar – 06 Apr | SIEM webhook, Falco, MTTD calculation |
-| 3 – Evaluation & Data Gathering | 5 | 07 Apr – 13 Apr | Golden/misconfigured clusters, comparative analysis |
-| 4 – Data Analysis & Thesis Writing | 6–7 | 14 Apr – 27 Apr | Chapters 1–5 drafting and iteration |
-| 5 – Final Polish & Presentation | 8 | 28 Apr – 04 May | Code cleanup, demo video, slide deck, **submission** |
+| Phase | Weeks | Calendar Dates | Focus | Status |
+|---|---|---|---|---|
+| 1 – Core Experiment Implementation | 1–2 | 10 Mar – 23 Mar | Go codebase, YAML payloads, K8s logic | ✅ Complete |
+| 2 – Feedback Loop & Mock SIEM | 3–4 | 24 Mar – 06 Apr | SIEM webhook, Falco, MTTD calculation | ✅ Complete (ahead of schedule) |
+| 3 – Evaluation & Data Gathering | 5 | 07 Apr – 13 Apr | Golden/misconfigured clusters, comparative analysis | ⏳ Up next |
+| 4 – Data Analysis & Thesis Writing | 6–7 | 14 Apr – 27 Apr | Chapters 1–5 drafting and iteration | ⏳ Pending |
+| 5 – Final Polish & Presentation | 8 | 28 Apr – 04 May | Code cleanup, demo video, slide deck, **submission** | ⏳ Pending |
 
 > [!TIP]
 > **Start writing early.** Begin drafting Chapters 1–2 (Introduction & Methodology) in the evenings during Phase 2 — these chapters don't depend on evaluation data and will take pressure off the compressed Phase 4.
@@ -52,10 +52,10 @@ go version && docker --version && kind version && kubectl version --client && he
 *Focus: Transitioning from "Hello World" to actual security validation (Addressing Objective 2 & RQ1).*
 
 ### Deliverables
-- [ ] Compiling Go binary with `go build ./cmd/chaos-sec/`
-- [ ] Two working YAML experiment payloads
-- [ ] Unit tests passing for loader, pod builder, and evaluation logic
-- [ ] `go test ./...` exits cleanly
+- [x] Compiling Go binary with `go build ./cmd/chaos-sec/`
+- [x] Two working YAML experiment payloads
+- [x] Unit tests passing for loader, pod builder, and evaluation logic
+- [x] `go test ./...` exits cleanly
 
 ---
 
@@ -364,10 +364,10 @@ defer cs.CoreV1().Pods(ns).Delete(ctx, podName, metav1.DeleteOptions{
 *Focus: Closing the loop to answer RQ3 regarding Mean Time to Detect (MTTD).*
 
 ### Deliverables
-- [ ] Mock SIEM server accepting Falco webhooks and storing alerts
-- [ ] MTTD computed and included in JSON report
-- [ ] Falco deployed on Kind cluster with custom rules firing on both experiments
-- [ ] Integration test: spawn experiment → receive Falco alert → calculate MTTD
+- [x] Mock SIEM server accepting Falco webhooks and storing alerts
+- [x] MTTD computed and included in JSON report
+- [x] Falco deployed on Kind cluster with custom rules firing on both experiments
+- [x] Integration test: spawn experiment → receive Falco alert → calculate MTTD
 
 ---
 
@@ -732,27 +732,31 @@ clean:
 ### Phase 1 — Core Implementation
 | Task | Area | Status |
 |---|---|---|
-| Directory structure & `go.mod` | Architecture | ☐ |
-| `ExperimentSpec` / `ExperimentResult` structs | Architecture | ☐ |
-| YAML loader + validator | YAML Payloads | ☐ |
-| `network-egress.yaml` payload | YAML Payloads | ☐ |
-| `host-path-access.yaml` payload | YAML Payloads | ☐ |
-| `NewClientset()` with in-cluster fallback | client-go | ☐ |
-| `BuildAttackerPod()` with hostPath injection | client-go | ☐ |
-| `WaitForPodCompletion()` with backoff | client-go | ☐ |
-| PSA admission error handling | client-go | ☐ |
-| Pod cleanup (deferred delete) | client-go | ☐ |
-| Unit tests for loader, pod builder, evaluator | Testing | ☐ |
+| Directory structure & `go.mod` | Architecture | ✅ |
+| `ExperimentSpec` / `ExperimentResult` structs | Architecture | ✅ |
+| YAML loader + validator | YAML Payloads | ✅ |
+| `network-egress.yaml` payload | YAML Payloads | ✅ |
+| `host-path-access.yaml` payload | YAML Payloads | ✅ |
+| `NewClientset()` with in-cluster fallback | client-go | ✅ |
+| `BuildAttackerPod()` with hostPath injection | client-go | ✅ |
+| `WaitForPodCompletion()` with backoff | client-go | ✅ |
+| PSA admission error handling | client-go | ✅ |
+| Pod cleanup (deferred delete) | client-go | ✅ |
+| Unit tests for loader, pod builder, evaluator | Testing | ✅ |
 
 ### Phase 2 — Mock SIEM & Feedback Loop
 | Task | Area | Status |
 |---|---|---|
-| Falco webhook HTTP server | Mock SIEM | ☐ |
-| `WaitForAlert()` polling logic | Mock SIEM | ☐ |
-| MTTD calculation in engine | Mock SIEM | ☐ |
-| Falco Helm deployment + custom rules | Mock SIEM | ☐ |
-| Integration test (end-to-end pipeline) | Testing | ☐ |
-| JSON report output | Architecture | ☐ |
+| Falco webhook HTTP server | Mock SIEM | ✅ |
+| `WaitForAlert()` polling logic | Mock SIEM | ✅ |
+| `ClearRule()` for stale alert prevention | Mock SIEM | ✅ |
+| MTTD calculation in engine | Mock SIEM | ✅ |
+| Engine calls `ClearRule` before each pod spawn | Engine | ✅ |
+| Falco Helm deployment + custom rules | Falco | ✅ |
+| Falco chart ConfigMap patch (Kind compatibility) | Falco | ✅ |
+| Integration test (end-to-end pipeline) | Testing | ✅ |
+| JSON report output | Architecture | ✅ |
+| `docs/` folder with architecture, setup, experiment, report docs | Documentation | ✅ |
 
 ### Phase 3 — Evaluation
 | Task | Area | Status |
