@@ -57,10 +57,35 @@ helm repo add falcosecurity https://falcosecurity.github.io/charts 2>/dev/null |
 helm repo update falcosecurity
 
 helm upgrade --install falco falcosecurity/falco \
+  --version 7.2.1 \
   -f falco/values.yaml \
   --namespace "${FALCO_NAMESPACE}" \
   --create-namespace \
   --timeout 5m
+
+# Falco chart 7.x generates both 'rules_file' (deprecated) and 'rules_files' in the
+# ConfigMap, which causes Falco to refuse to start. Patch it to keep only 'rules_files'.
+# Also disable watch_config_files to avoid hitting the inotify instance limit in Kind.
+echo "      Patching Falco ConfigMap (removing deprecated rules_file key, disabling watch_config_files)..."
+kubectl get configmap falco -n "${FALCO_NAMESPACE}" -o json \
+  | python3 -c "
+import json, sys
+cm = json.load(sys.stdin)
+lines = cm['data']['falco.yaml'].splitlines()
+out, skip = [], False
+for line in lines:
+    if line == 'rules_file:':
+        skip = True; continue
+    if skip:
+        if line.startswith('- '): continue
+        skip = False
+    out.append(line)
+patched = '\n'.join(out).replace('watch_config_files: true', 'watch_config_files: false')
+cm['data']['falco.yaml'] = patched
+print(json.dumps(cm))
+" | kubectl replace -f -
+
+kubectl rollout restart daemonset/falco -n "${FALCO_NAMESPACE}"
 
 echo "[5/6] Falco installed. Waiting for DaemonSet to be ready (up to 3 min)..."
 kubectl rollout status daemonset/falco -n "${FALCO_NAMESPACE}" --timeout=180s

@@ -21,11 +21,8 @@ falco:
   log_level: warning
   priority: warning
 
-  # Append custom rules on top of the default ruleset.
-  rules_file:
-    - /etc/falco/falco_rules.yaml
-    - /etc/falco/falco_rules.local.yaml
-    - /etc/falco/chaos_sec_rules.yaml
+  # Disable config file watching to avoid hitting the inotify instance limit in Kind.
+  watch_config_files: false
 
 # Mount the custom rules file into the Falco DaemonSet.
 customRules:
@@ -42,7 +39,7 @@ customRules:
         fd.sip != "0.0.0.0"
       output: >
         Outbound connection attempt by non-allowlisted process
-        (proc=%proc.name sip=%fd.sip sport=%fd.sport dport=%fd.dport
+        (proc=%proc.name sip=%fd.sip sport=%fd.sport
          container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
          image=%container.image.repository)
       priority: WARNING

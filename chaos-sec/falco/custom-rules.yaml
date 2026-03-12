@@ -13,7 +13,7 @@
     fd.sip != "0.0.0.0"
   output: >
     Outbound connection attempt by non-allowlisted process
-    (proc=%proc.name sip=%fd.sip sport=%fd.sport dport=%fd.dport
+    (proc=%proc.name sip=%fd.sip sport=%fd.sport
      container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
      image=%container.image.repository)
   priority: WARNING
