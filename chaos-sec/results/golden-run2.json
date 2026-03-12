@@ -1,0 +1,57 @@
+{
+  "generated_at": "2026-03-12T22:03:45.062161978Z",
+  "total_runs": 2,
+  "passed": 2,
+  "failed": 0,
+  "results": [
+    {
+      "spec": {
+        "name": "host-path-access",
+        "description": "Attempts to create a pod that mounts a sensitive host directory (/etc) and reads /etc/shadow. Pod Security Admission (restricted profile) should block pod creation entirely. If the pod is created and the read succeeds, PSA has failed open or is misconfigured.\n",
+        "image": "busybox:1.36",
+        "command": [
+          "sh",
+          "-c",
+          "cat /host-etc/shadow \u0026\u0026 echo SUCCESS || echo BLOCKED"
+        ],
+        "expected_outcome": "blocked",
+        "falco_rule": "read_sensitive_file_untrusted",
+        "namespace": "chaos-sec-experiments",
+        "host_path_mount": "/etc"
+      },
+      "start_time": "2026-03-12T22:02:45.033309577Z",
+      "end_time": "2026-03-12T22:02:45.054812896Z",
+      "pod_exit_code": 0,
+      "actual_outcome": "blocked",
+      "pass": true,
+      "pod_logs": ""
+    },
+    {
+      "spec": {
+        "name": "network-egress",
+        "description": "Spawns an attacker pod that attempts an outbound HTTP connection to 8.8.8.8:80. A correctly configured default-deny egress NetworkPolicy should block this. If the connection succeeds, the network policy has failed open.\n",
+        "image": "curlimages/curl:8.7.1",
+        "command": [
+          "curl",
+          "--max-time",
+          "5",
+          "--silent",
+          "--output",
+          "/dev/null",
+          "--write-out",
+          "%{http_code}",
+          "http://8.8.8.8"
+        ],
+        "expected_outcome": "blocked",
+        "falco_rule": "outbound_connection_not_in_allowlist",
+        "namespace": "chaos-sec-experiments"
+      },
+      "start_time": "2026-03-12T22:03:15.055693155Z",
+      "end_time": "2026-03-12T22:03:15.061845348Z",
+      "pod_exit_code": 0,
+      "actual_outcome": "blocked",
+      "pass": true,
+      "pod_logs": ""
+    }
+  ]
+}

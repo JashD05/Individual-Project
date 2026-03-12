@@ -57,6 +57,9 @@ teardown-cluster:
 integration-test: docker-image
 	./scripts/integration-test.sh
 
-## help: List available targets
-help:
+## analyse: Run Phase 3 data analysis (requires results/ to be populated)
+analyse:
+	python3 scripts/analyse-results.py
+
+
 	@grep -E '^## ' Makefile | sed 's/## //'

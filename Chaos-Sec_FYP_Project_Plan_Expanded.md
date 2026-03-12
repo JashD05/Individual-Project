@@ -17,8 +17,8 @@
 |---|---|---|---|---|
 | 1 – Core Experiment Implementation | 1–2 | 10 Mar – 23 Mar | Go codebase, YAML payloads, K8s logic | ✅ Complete |
 | 2 – Feedback Loop & Mock SIEM | 3–4 | 24 Mar – 06 Apr | SIEM webhook, Falco, MTTD calculation | ✅ Complete (ahead of schedule) |
-| 3 – Evaluation & Data Gathering | 5 | 07 Apr – 13 Apr | Golden/misconfigured clusters, comparative analysis | ⏳ Up next |
-| 4 – Data Analysis & Thesis Writing | 6–7 | 14 Apr – 27 Apr | Chapters 1–5 drafting and iteration | ⏳ Pending |
+| 3 – Evaluation & Data Gathering | 5 | 07 Apr – 13 Apr | Golden/misconfigured clusters, comparative analysis | ✅ Complete (ahead of schedule) |
+| 4 – Data Analysis & Thesis Writing | 6–7 | 14 Apr – 27 Apr | Chapters 1–5 drafting and iteration | ⏳ Up next |
 | 5 – Final Polish & Presentation | 8 | 28 Apr – 04 May | Code cleanup, demo video, slide deck, **submission** | ⏳ Pending |
 
 > [!TIP]
@@ -761,11 +761,11 @@ clean:
 ### Phase 3 — Evaluation
 | Task | Area | Status |
 |---|---|---|
-| Golden cluster setup & validation | Evaluation | ☐ |
-| Misconfigured cluster setup & validation | Evaluation | ☐ |
-| 5× repeated runs per cluster | Evaluation | ☐ |
-| Manual timing comparison | Evaluation | ☐ |
-| Data analysis & chart generation | Evaluation | ☐ |
+| Golden cluster setup & validation | Evaluation | ✅ |
+| Misconfigured cluster setup & validation | Evaluation | ✅ |
+| 5× repeated runs per cluster | Evaluation | ✅ |
+| Manual timing comparison | Evaluation | ✅ |
+| Data analysis & chart generation (`scripts/analyse-results.py`) | Evaluation | ✅ |
 
 ### Phase 4 — Thesis
 | Task | Area | Status |
