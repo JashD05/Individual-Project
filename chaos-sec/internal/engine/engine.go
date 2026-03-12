@@ -40,6 +40,13 @@ func (e *Engine) Run(ctx context.Context, specs []experiment.ExperimentSpec) []e
 
 	for _, spec := range specs {
 		slog.Info("starting experiment", "name", spec.Name)
+
+		// Clear any stale alerts for this rule before spawning the pod so that
+		// alerts from a previous run don't skew the MTTD calculation.
+		if e.SIEMStore != nil && spec.FalcoRule != "" {
+			e.SIEMStore.ClearRule(spec.FalcoRule)
+		}
+
 		start := time.Now()
 
 		result, err := e.Runner.Run(ctx, spec)

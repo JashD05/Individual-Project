@@ -100,3 +100,54 @@ func TestReset_ClearsAlerts(t *testing.T) {
 		t.Errorf("expected 0 alerts after reset, got %d", count)
 	}
 }
+
+func TestClearRule_RemovesOnlyTargetRule(t *testing.T) {
+	store := NewAlertStore()
+	store.mu.Lock()
+	store.alerts["rule_a"] = []FalcoAlert{{Rule: "rule_a"}}
+	store.alerts["rule_b"] = []FalcoAlert{{Rule: "rule_b"}}
+	store.mu.Unlock()
+
+	store.ClearRule("rule_a")
+
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	if len(store.alerts["rule_a"]) != 0 {
+		t.Errorf("expected rule_a to be cleared, got %d alerts", len(store.alerts["rule_a"]))
+	}
+	if len(store.alerts["rule_b"]) != 1 {
+		t.Errorf("expected rule_b to be untouched, got %d alerts", len(store.alerts["rule_b"]))
+	}
+}
+
+func TestHandler_RejectsBadJSON(t *testing.T) {
+	store := NewAlertStore()
+	ts := httptest.NewServer(http.HandlerFunc(store.Handler))
+	defer ts.Close()
+
+	resp, err := http.Post(ts.URL, "application/json", bytes.NewBufferString("not-json"))
+	if err != nil {
+		t.Fatalf("POST failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestHandler_RejectsGetMethod(t *testing.T) {
+	store := NewAlertStore()
+	ts := httptest.NewServer(http.HandlerFunc(store.Handler))
+	defer ts.Close()
+
+	resp, err := http.Get(ts.URL)
+	if err != nil {
+		t.Fatalf("GET failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("expected 405, got %d", resp.StatusCode)
+	}
+}

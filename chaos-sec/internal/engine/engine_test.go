@@ -1,7 +1,11 @@
 package engine
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -127,4 +131,61 @@ func TestEngine_MTTDNilWhenNoAlert(t *testing.T) {
 	if results[0].MTTD != nil {
 		t.Errorf("expected nil MTTD (no alert received), got %v", *results[0].MTTD)
 	}
+}
+
+func TestEngine_MTTDComputed(t *testing.T) {
+	const ruleName = "test_rule_mttd"
+	spec := experiment.ExperimentSpec{
+		Name:            "mttd-computed-exp",
+		ExpectedOutcome: "blocked",
+		FalcoRule:       ruleName,
+		Namespace:       "test",
+	}
+
+	store := siem.NewAlertStore()
+
+	// Inject a Falco alert shortly after the experiment pod would start.
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		store.Handler(
+			httpRecorder(),
+			falcoAlertRequest(t, ruleName),
+		)
+	}()
+
+	runner := &fakePodRunner{}
+	eng := New(runner, store)
+	eng.AlertWaitTimeout = 2 * time.Second
+
+	results := eng.Run(context.Background(), []experiment.ExperimentSpec{spec})
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result, got %d", len(results))
+	}
+	if results[0].MTTD == nil {
+		t.Fatal("expected MTTD to be set when alert is received")
+	}
+	if *results[0].MTTD < 0 {
+		t.Errorf("MTTD should be non-negative, got %.3f", *results[0].MTTD)
+	}
+}
+
+// httpRecorder returns a minimal http.ResponseWriter for use in tests.
+func httpRecorder() http.ResponseWriter {
+	return httptest.NewRecorder()
+}
+
+// falcoAlertRequest builds an *http.Request containing a JSON-encoded FalcoAlert
+// for the given rule, suitable for passing to AlertStore.Handler in tests.
+func falcoAlertRequest(t *testing.T, ruleName string) *http.Request {
+	t.Helper()
+	payload := map[string]string{"rule": ruleName, "priority": "WARNING", "output": "test"}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshalling alert: %v", err)
+	}
+	req, err := http.NewRequest(http.MethodPost, "/falco", bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("creating request: %v", err)
+	}
+	return req
 }

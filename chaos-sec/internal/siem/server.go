@@ -77,11 +77,20 @@ func (s *AlertStore) WaitForAlert(ctx context.Context, ruleName string) (*FalcoA
 	}
 }
 
-// Reset clears all stored alerts. Useful between experiment runs.
+// Reset clears all stored alerts. Useful between full experiment runs.
 func (s *AlertStore) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.alerts = make(map[string][]FalcoAlert)
+}
+
+// ClearRule removes all stored alerts for a specific rule name.
+// Call this before spawning an attacker pod to prevent stale alerts from a
+// previous run skewing MTTD calculations for the same rule.
+func (s *AlertStore) ClearRule(ruleName string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.alerts, ruleName)
 }
 
 // ListenAndServe starts the Falco webhook HTTP server on the given address (e.g. ":8080").
