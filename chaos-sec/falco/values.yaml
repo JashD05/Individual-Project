@@ -1,0 +1,79 @@
+# Falco Helm values for chaos-sec integration.
+# Usage: helm install falco falcosecurity/falco -f falco/values.yaml --namespace falco --create-namespace
+
+# Use modern eBPF probe — built into the Falco binary, no driver-loader init container needed.
+# This avoids the large falco-driver-loader image pull that times out on macOS Docker Desktop.
+driver:
+  kind: modern_ebpf
+
+# Emit all alerts as JSON so they can be parsed by the chaos-sec SIEM webhook.
+falco:
+  json_output: true
+  json_include_output_property: true
+
+  # Forward every alert to the chaos-sec Mock SIEM webhook.
+  http_output:
+    enabled: true
+    url: "http://chaos-sec.chaos-sec-experiments.svc.cluster.local:8080/falco"
+    user_agent: "falcosecurity/falco"
+
+  # Reduce noise during experiments: log only WARNING and above.
+  log_level: warning
+  priority: warning
+
+  # Append custom rules on top of the default ruleset.
+  rules_file:
+    - /etc/falco/falco_rules.yaml
+    - /etc/falco/falco_rules.local.yaml
+    - /etc/falco/chaos_sec_rules.yaml
+
+# Mount the custom rules file into the Falco DaemonSet.
+customRules:
+  chaos_sec_rules.yaml: |
+    - rule: outbound_connection_not_in_allowlist
+      desc: >
+        Detects outbound TCP connections made by container processes not in the
+        allowlist. Fires when the network-egress experiment pod (curl) attempts
+        to reach an external IP.
+      condition: >
+        outbound and container and
+        not proc.name in (allowed_network_binaries) and
+        fd.sip != "127.0.0.1" and
+        fd.sip != "0.0.0.0"
+      output: >
+        Outbound connection attempt by non-allowlisted process
+        (proc=%proc.name sip=%fd.sip sport=%fd.sport dport=%fd.dport
+         container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+         image=%container.image.repository)
+      priority: WARNING
+      tags: [network, egress, chaos-sec]
+
+    - rule: read_sensitive_file_untrusted
+      desc: >
+        Detects attempts to open sensitive host-filesystem files from a container.
+      condition: >
+        open_read and container and
+        fd.name in (sensitive_files) and
+        not proc.name in (trusted_binaries) and
+        not container.image.repository in (falco_privileged_images)
+      output: >
+        Sensitive file read from container
+        (file=%fd.name proc=%proc.name user=%user.name
+         container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+         image=%container.image.repository)
+      priority: CRITICAL
+      tags: [filesystem, hostpath, chaos-sec]
+
+# Resource limits for the Falco DaemonSet pods.
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+# Tolerate all nodes so Falco runs on every node in the cluster.
+tolerations:
+  - effect: NoSchedule
+    operator: Exists

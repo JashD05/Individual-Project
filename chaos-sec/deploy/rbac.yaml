@@ -1,0 +1,38 @@
+---
+# ServiceAccount used by chaos-sec to authenticate to the Kubernetes API.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaos-sec
+  namespace: chaos-sec-experiments
+---
+# ClusterRole grants the minimum permissions needed to run experiments:
+# - Create, get, delete, and watch pods (attacker pod lifecycle)
+# - Get namespaces (validate the target namespace exists)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chaos-sec
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["create", "get", "list", "delete", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chaos-sec
+subjects:
+  - kind: ServiceAccount
+    name: chaos-sec
+    namespace: chaos-sec-experiments
+roleRef:
+  kind: ClusterRole
+  name: chaos-sec
+  apiGroup: rbac.authorization.k8s.io

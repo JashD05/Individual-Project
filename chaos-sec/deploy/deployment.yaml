@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-sec
+  namespace: chaos-sec-experiments
+  labels:
+    app: chaos-sec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-sec
+  template:
+    metadata:
+      labels:
+        app: chaos-sec
+    spec:
+      serviceAccountName: chaos-sec
+      # Run as non-root in a restricted namespace.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: chaos-sec
+          image: chaos-sec:latest
+          imagePullPolicy: Never   # Use locally loaded image in Kind
+          args:
+            - --experiments=/experiments
+            - --namespace=chaos-sec-experiments
+            - --siem-port=8080
+            - --report-out=/reports/results.json
+            - --timeout=10m
+          ports:
+            - name: siem
+              containerPort: 8080
+              protocol: TCP
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: experiments
+              mountPath: /experiments
+              readOnly: true
+            - name: reports
+              mountPath: /reports
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+      volumes:
+        - name: experiments
+          configMap:
+            name: chaos-sec-experiments
+        - name: reports
+          emptyDir: {}

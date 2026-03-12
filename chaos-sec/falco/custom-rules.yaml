@@ -1,0 +1,38 @@
+# Custom Falco rules for Chaos-Sec experiments.
+# Append this file to the default Falco ruleset via Helm.
+
+- rule: outbound_connection_not_in_allowlist
+  desc: >
+    Detects outbound TCP connections made by container processes not in the
+    allowlist. Fires when the network-egress experiment pod (curl) attempts to
+    reach an external IP.
+  condition: >
+    outbound and container and
+    not proc.name in (allowed_network_binaries) and
+    fd.sip != "127.0.0.1" and
+    fd.sip != "0.0.0.0"
+  output: >
+    Outbound connection attempt by non-allowlisted process
+    (proc=%proc.name sip=%fd.sip sport=%fd.sport dport=%fd.dport
+     container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+     image=%container.image.repository)
+  priority: WARNING
+  tags: [network, egress, chaos-sec]
+
+- rule: read_sensitive_file_untrusted
+  desc: >
+    Detects attempts to open sensitive host-filesystem files from a container.
+    Fires when the host-path-access experiment pod reads /etc/shadow via a
+    hostPath volume mount.
+  condition: >
+    open_read and container and
+    fd.name in (sensitive_files) and
+    not proc.name in (trusted_binaries) and
+    not container.image.repository in (falco_privileged_images)
+  output: >
+    Sensitive file read from container
+    (file=%fd.name proc=%proc.name user=%user.name
+     container=%container.name pod=%k8s.pod.name ns=%k8s.ns.name
+     image=%container.image.repository)
+  priority: CRITICAL
+  tags: [filesystem, hostpath, chaos-sec]

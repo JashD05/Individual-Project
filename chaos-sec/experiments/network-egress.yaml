@@ -1,0 +1,25 @@
+name: network-egress
+description: >
+  Spawns an attacker pod that attempts an outbound HTTP connection to 8.8.8.8:80.
+  A correctly configured default-deny egress NetworkPolicy should block this.
+  If the connection succeeds, the network policy has failed open.
+
+image: curlimages/curl:8.7.1
+command:
+  - curl
+  - --max-time
+  - "5"
+  - --silent
+  - --output
+  - /dev/null
+  - --write-out
+  - "%{http_code}"
+  - http://8.8.8.8
+
+namespace: chaos-sec-experiments
+
+# "blocked" means we expect the pod to exit non-zero (connection refused/timeout).
+expected_outcome: blocked
+
+# The Falco rule expected to fire when the egress attempt is made.
+falco_rule: outbound_connection_not_in_allowlist
