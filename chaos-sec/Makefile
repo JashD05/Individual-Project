@@ -61,5 +61,3 @@ integration-test: docker-image
 analyse:
 	python3 scripts/analyse-results.py
 
-
-	@grep -E '^## ' Makefile | sed 's/## //'
