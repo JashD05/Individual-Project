@@ -30,7 +30,7 @@ test:
 
 ## test-cover: Run tests and show coverage summary
 test-cover:
-	go test ./... -race -count=1 -coverprofile=coverage.out
+	go test ./internal/... -race -count=1 -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
 ## lint: Run go vet

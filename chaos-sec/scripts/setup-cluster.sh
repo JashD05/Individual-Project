@@ -61,6 +61,7 @@ helm upgrade --install falco falcosecurity/falco \
   -f falco/values.yaml \
   --namespace "${FALCO_NAMESPACE}" \
   --create-namespace \
+  --force \
   --timeout 5m
 
 # Falco chart 7.x generates both 'rules_file' (deprecated) and 'rules_files' in the
