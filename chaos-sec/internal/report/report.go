@@ -1,3 +1,6 @@
+// Package report serialises a slice of ExperimentResults into a structured
+// JSON report. The report includes a summary (total/passed/failed counts,
+// generation timestamp) and the full per-experiment detail including MTTD.
 package report
 
 import (
@@ -11,10 +14,10 @@ import (
 
 // Summary is the top-level JSON structure written to the report file.
 type Summary struct {
-	GeneratedAt time.Time                    `json:"generated_at"`
-	TotalRuns   int                          `json:"total_runs"`
-	Passed      int                          `json:"passed"`
-	Failed      int                          `json:"failed"`
+	GeneratedAt time.Time                     `json:"generated_at"`
+	TotalRuns   int                           `json:"total_runs"`
+	Passed      int                           `json:"passed"`
+	Failed      int                           `json:"failed"`
 	Results     []experiment.ExperimentResult `json:"results"`
 }
 

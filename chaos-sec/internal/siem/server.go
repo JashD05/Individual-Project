@@ -1,3 +1,7 @@
+// Package siem implements a lightweight Mock SIEM (Security Information and
+// Event Management) webhook server that receives Falco alerts over HTTP,
+// stores them in an in-memory AlertStore, and exposes a WaitForAlert method
+// used by the engine to measure Mean Time To Detect (MTTD).
 package siem
 
 import (

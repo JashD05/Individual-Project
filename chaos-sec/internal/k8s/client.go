@@ -1,3 +1,7 @@
+// Package k8s provides helpers for interacting with the Kubernetes API in the
+// context of Chaos-Sec experiments: building attacker pod specs, creating and
+// monitoring pods, evaluating their exit outcomes, and constructing a clientset
+// from in-cluster config or a local kubeconfig file.
 package k8s
 
 import (

@@ -1,3 +1,7 @@
+// Package engine orchestrates the end-to-end lifecycle of Chaos-Sec security
+// experiments: it iterates over a list of ExperimentSpecs, delegates pod
+// execution to a PodRunner, measures Mean Time To Detect (MTTD) via the SIEM
+// AlertStore, and returns a slice of ExperimentResults.
 package engine
 
 import (

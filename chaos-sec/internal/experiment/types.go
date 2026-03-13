@@ -1,3 +1,6 @@
+// Package experiment defines the data types and YAML loader for Chaos-Sec
+// security experiments. Each experiment is described by an ExperimentSpec
+// loaded from a *.yaml file, and produces an ExperimentResult after execution.
 package experiment
 
 import "time"
